@@ -39,6 +39,7 @@ module.exports = function(options) {
     https: false,
     open: false,
     log: 'info',
+    serverLoggin: true,
 
     /**
      *
@@ -93,6 +94,12 @@ module.exports = function(options) {
 
   // connect app
   var app = connect();
+
+  // Turn off any logging created by the server
+  if (!config.serverLoggin) {
+    gutil.log = Function.prototype
+  }
+
   // Proxy requests
   for (var i = 0, len = config.proxies.length; i < len; i++) {
     var proxyoptions = url.parse(config.proxies[i].target);
@@ -119,7 +126,7 @@ module.exports = function(options) {
     }
 
     // If it wasn't provided, use the server host:
-    var markupHost = !!_.get(config.livereload.markupHost, 'length') 
+    var markupHost = !!_.get(config.livereload.markupHost, 'length')
       ? "'" + config.livereload.markupHost + "'"
       : null;
 
