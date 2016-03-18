@@ -39,7 +39,7 @@ module.exports = function(options) {
     https: false,
     open: false,
     log: 'info',
-    serverLoggin: true,
+    serverLogging: true,
 
     /**
      *
@@ -96,7 +96,7 @@ module.exports = function(options) {
   var app = connect();
 
   // Turn off any logging created by the server
-  if (!config.serverLoggin) {
+  if (!config.serverLogging) {
     gutil.log = Function.prototype
   }
 
