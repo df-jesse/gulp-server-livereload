@@ -5,6 +5,11 @@ var _ = require('lodash'),
   gutil = require('gulp-util'),
   http = require('http'),
   https = require('https'),
+
+  // we are using node-spdy beacuse it already works with express and supports http2: https://github.com/indutny/node-spdy
+  // node-http2 does not yet work with express (this should be fixed in express 5):
+  // https://github.com/molnarg/node-http2 (see: https://github.com/molnarg/node-http2/issues/100)
+  spdy = require('spdy'),
   inject = require('connect-inject'),
   connect = require('connect'),
   proxy = require('proxy-middleware'),
@@ -19,9 +24,7 @@ var _ = require('lodash'),
   url = require('url'),
   extend = require('node.extend');
 
-
 var BROWSER_SCIPTS_DIR = path.join(__dirname, 'browser-scripts');
-
 
 
 
@@ -40,6 +43,7 @@ module.exports = function(options) {
     open: false,
     log: 'info',
     serverLogging: true,
+    http2: false,
 
     /**
      *
@@ -63,7 +67,7 @@ module.exports = function(options) {
       filter: function(filename, cb) {
         cb( !(/node_modules/.test(filename)) );
       },
-      clientConsole: false,
+      clientConsole: false
     },
 
     // Middleware: Directory listing
@@ -97,6 +101,7 @@ module.exports = function(options) {
 
   // Turn off any logging created by the server
   if (!config.serverLogging) {
+    gutil.log("disabling further server logs");
     gutil.log = Function.prototype
   }
 
@@ -145,7 +150,7 @@ module.exports = function(options) {
 
     var append = function(w, s) {
       return w + s;
-    }
+    };
 
     app.use(inject({
       snippet: snippet,
@@ -219,20 +224,43 @@ module.exports = function(options) {
     gutil.log('Livereload started at', gutil.colors.gray('http' + (config.https ? 's' : '') + '://' + config.host + ':' + config.livereload.port));
   }
 
+  // start the web server using the apropriate http provider based on https and http2 flags.
+  var makeWebserver = function(opts) {
+    var httpProvider = null;
+    var httpOpts = null;
+
+    if (config.https) {
+      httpOpts = {
+        key: fs.readFileSync(config.https.key || __dirname + '/../ssl/dev-key.pem'),
+        cert: fs.readFileSync(config.https.cert || __dirname + '/../ssl/dev-cert.pem')
+      };
+    }
+
+    if (config.https && config.http2) {
+      gutil.log("HTTP2 server configured");
+      httpProvider = spdy;
+      httpOpts.spdy = {
+        protocols: [ 'h2', 'http/1.1', 'http/1.0'], // the spdy server will still fall back to older protocols
+        maxStreams: 1000 // number of concurrent requests within a connection
+
+      };
+    } else if (config.https) {
+      httpProvider = https;
+    } else if (config.http2) {
+      throw new Error("http2 only supported over HTTPS in most browsers.");
+    } else {
+      httpProvider = http;
+    }
+
+    if (httpOpts) { // this means we are https/spdy
+      return httpProvider.createServer(httpOpts, app);
+    } else { // otherwise plain http
+      return httpProvider.createServer(app);
+    }
+  };
+
   // http server
-  var webserver = null;
-  if (config.https) {
-    var options = {
-      key: fs.readFileSync(config.https.key || __dirname + '/../ssl/dev-key.pem'),
-      cert: fs.readFileSync(config.https.cert || __dirname + '/../ssl/dev-cert.pem')
-    };
-
-    webserver = https.createServer(options, app);
-  }
-  else {
-    webserver = http.createServer(app);
-  }
-
+  var webserver = makeWebserver(options);
   var files = [];
 
   // Create server
@@ -263,7 +291,7 @@ module.exports = function(options) {
             config.livereload.io.sockets.emit('file_changed', {
               path: filename,
               name: path.basename(filename),
-              ext: path.extname(filename),
+              ext: path.extname(filename)
             });
           }
         });

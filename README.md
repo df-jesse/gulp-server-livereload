@@ -85,7 +85,7 @@ Key | Type | Default | Description |
 `host` | String | `localhost` | hostname of the webserver
 `port` | Number | `8000` | port of the webserver
 `livereload` | Boolean/Object | `false` | whether to use livereload. For advanced options, provide an object.
-`livereload.enable` | Boolean | `false` | whether to use livereload (when `livereload` is an object). For advanced options, provide an object.
+`livereload.enable` | Boolean | `false` | whether to use livereload (when the `livereload` property is an object). By default, when `liverelead` is set to an object it is disabled.
 `livereload.port` | Number | `35729` | port for livereload server to listen on.
 `livereload.markupHost` | String | `null` | the hostname to use for the livereload server in the injected SCRIPT tag. Default is to calculate it dynamically in the browser.
 `livereload.filter` | Function | - | function to filter out files to watch (default filters out `node_modules`).
@@ -95,6 +95,7 @@ Key | Type | Default | Description |
 `fallback` | String | `undefined` | file to fall back to (relative to webserver root) when requested resource not found. Useful when building single-page apps with non-has URLs.
 `open` | Boolean/Object | `false` | open the localhost server in the browser
 `https` | Boolean/Object | `false` | whether to use https or not. By default, `gulp-server-livereload` provides you with a development certificate but you remain free to specify a path for your key and certificate by providing an object like this one: `{key: 'path/to/key.pem', cert: 'path/to/cert.pem'}`.
+`http2` | Boolean | `false` | whether to use http2 or not. Even when turned on, `gulp-server-livereload` will fall back to http 1.1 and 1.0
 `log` | String | `info` | If set to `debug` you will see all requests logged to the console.
 `serverLogging` | Boolean | `true` | If set to true, it prints access logs like normal, if false logs are supressed (default is true)
 `proxies` | Array | `[]`| a list of proxy objects.  Each proxy object can be specified by `{source: '/abc', target: 'http://localhost:8080/abc', options: {headers: {'ABC_HEADER': 'abc'}}}`.
@@ -132,6 +133,19 @@ The `file` parameter has the following structure:
   "ext": ...file extension name...
 }
 ```
+
+## Http2 behaviour
+Http2 is provided via the [node-spdy module](https://github.com/indutny/node-spdy) and will fall back to http1.1 and 1.0.
+It will not fall back to spdy protocol versions. This should be fully compatible with node 4.x and 5.x, although in mid
+2016, chrome will be removing support for the NPN TLS extension in favor of ALPN. ALPN is only supported by node 5.x
+which will then force the upgrade for continued http2 support in chrome (at least).
+
+Note: as stated above, http2 requires https be enabled.
+
+Currently HTTP2 support is limited to simple multiplyxing use cases. There is no support for server push or other
+similar features. This is, in part, due to the fact that the underlying file serving libraries `serve-index` and
+`serve-static` do not seem to support this functionality and I did not want to replace them at this time.
+
 
 ## FAQ
 

@@ -34,19 +34,21 @@
     "supertest": "~0.13.0"
   },
   "dependencies": {
-    "lodash": "^4.0.0",
     "commander": "^2.8.1",
-    "connect": "~3.1.1",
-    "connect-inject": "~0.3.2",
+    "compression": "^1.6.1",
+    "connect": "~3.4.1",
+    "connect-inject": "~0.4.0",
     "gulp-util": "~2.2.19",
+    "http2": "^3.3.2",
     "lodash": "^4.0.0",
     "node-watch": "^0.3.4",
     "node.extend": "~1.0.10",
     "open": "~0.0.5",
     "proxy-middleware": "~0.15.0",
-    "serve-index": "~1.1.4",
-    "serve-static": "~1.5.2",
+    "serve-index": "~1.7.3",
+    "serve-static": "~1.10.2",
     "socket.io": "^1.4.4",
+    "spdy": "^3.2.3",
     "through2": "~0.5.1",
     "vinyl-fs": "^1.0.0"
   }
